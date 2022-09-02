@@ -1,7 +1,13 @@
 package sender;
 
-import javax.jms.*;
+import javax.jms.DeliveryMode;
+import javax.jms.Queue;
+import javax.jms.QueueConnection;
 import javax.jms.QueueConnectionFactory;
+import javax.jms.QueueSender;
+import javax.jms.QueueSession;
+import javax.jms.Session;
+import javax.jms.TextMessage;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -9,39 +15,44 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 public class MySender {
 
 	public static void main(String[] args) {
-		
-		try{
-			
+
+		try {
+
 			ApplicationContext applicationContext = new ClassPathXmlApplicationContext("applicationContextJMS.xml");
 			QueueConnectionFactory factory = (QueueConnectionFactory) applicationContext.getBean("connectionFactory");
-			
+
 			Queue queue = (Queue) applicationContext.getBean("queue");
 
-			// Create a connection. See https://docs.oracle.com/javaee/7/api/javax/jms/package-summary.html
-			QueueConnection connection = factory.createQueueConnection() ;
+			// Create a connection. See
+			// https://docs.oracle.com/javaee/7/api/javax/jms/package-summary.html
+			QueueConnection queueConn = factory.createQueueConnection();
 
 			// Open a session without transaction and acknowledge automatic
-			QueueSession session = connection.createQueueSession( false, Session.AUTO_ACKNOWLEDGE) ;
+			QueueSession queueSession = queueConn.createQueueSession(false, Session.DUPS_OK_ACKNOWLEDGE);
 			// Start the connection
-			connection.start();
+			queueConn.start();
 			// Create a sender
-			QueueSender sender1 = session.createSender( queue) ;
-			QueueSender sender2 = session.createSender( queue) ;
-			// Create a message
-			TextMessage message1 = session.createTextMessage("Hello I'm JMS ");
-			TextMessage message2 = session.createTextMessage("Welcome");
-			// Send the message(
-			//- Persistent mode
-			//- Time to live
-			//- Priority)
-			sender1.send(message1, DeliveryMode.PERSISTENT,4,10000) ;
-			sender2.send(message2, DeliveryMode.PERSISTENT,4,10000) ;
-			// Close the session
-			session.close();
-			// Close the connection
-			connection.close();
+			QueueSender queueSender = queueSession.createSender(queue);
+			// Persistent mode
+			// queueSender.setDeliveryMode(DeliveryMode.PERSISTENT);
+			//queueSender.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
+			// Persistent mode
+			 queueSender.setDeliveryMode(DeliveryMode.PERSISTENT);
+			// Time to live
+			 // queueSender.setTimeToLive(2000);
+			// Priority
+			// queueSender.setPriority(7);
 
-		}catch(Exception e){
+			// Create a message
+			TextMessage message = queueSession.createTextMessage("Hello ! love Efrei ?");
+			// Send the message
+			queueSender.send(message);
+			System.out.println("sent: " + message.getText());
+			// Close the session
+			queueSession.close();
+			// Close the connection
+			queueConn.close();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
